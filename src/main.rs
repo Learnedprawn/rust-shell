@@ -2,18 +2,30 @@
 use std::io::{self, Write};
 
 fn main() {
-    while true {
+    loop {
         print!("$ ");
         io::stdout().flush().unwrap();
 
-        let mut command = String::new();
-        io::stdin().read_line(&mut command).unwrap();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
 
-        match command.trim() {
+        let mut input_iterator = input.trim().split(" ");
+
+        let command: &str = input_iterator.next().expect("Command parse error");
+
+        // println!("Command: {:?}", command);
+
+        match command {
             "exit" => break,
-            _ => {}
+            "echo" => {
+                for word in input_iterator {
+                    print!("{} ", word);
+                }
+                print!("\n");
+            }
+            _ => {
+                print!("{}: command not found\n", command.trim());
+            }
         }
-
-        print!("{}: command not found\n", command.trim());
     }
 }
