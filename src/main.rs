@@ -4,33 +4,36 @@ use std::io::{self, Write};
 
 enum CommandType {
     Builtin,
-    File,
+    File(String),
     NotFound,
 }
 
 impl CommandType {
-    pub fn from_str(s: &str, filepath: &mut &String) -> Self {
+    pub fn from_str(s: &str) -> Self {
         match s {
             "exit" => CommandType::Builtin,
             "echo" => CommandType::Builtin,
             "type" => CommandType::Builtin,
-            command if find_file(s, filepath) => CommandType::File,
-            _ => CommandType::NotFound,
+            _ => match find_file(s) {
+                Some(result) => CommandType::File(result),
+                None => CommandType::NotFound,
+            },
         }
     }
 }
 
-pub fn find_file(s: &str, filepath: &mut &String) -> bool {
+pub fn find_file(s: &str) -> Option<String> {
     let path = env::var("PATH").expect("Path Parsing error");
     let path_iterator = path.split(":");
     for path in path_iterator {
         let full_path = format!("{}/{}", path, s);
         if std::path::Path::new(&full_path).exists() {
-            println!("{} is {}", s, full_path);
-            return true;
+            // println!("{} is {}", s, full_path);
+            let result = format!("{} is {}", s, full_path);
+            return Some(result);
         }
     }
-    false
+    None
 }
 
 fn main() {
@@ -45,10 +48,6 @@ fn main() {
 
         let command: &str = input_iterator.next().expect("Command parse error");
 
-        // println!("Command: {:?}", command);
-        // let path = env::var("PATH");
-        // println!("PATH: {:?}", path);
-
         match command {
             "exit" => break,
             "echo" => {
@@ -59,14 +58,12 @@ fn main() {
             }
             "type" => {
                 let type_command = input_iterator.next().expect("type command error");
-                let filepath = String::new();
-                match CommandType::from_str(type_command, &mut &filepath) {
+                match CommandType::from_str(type_command) {
                     CommandType::Builtin => {
                         println!("{} is a shell builtin", type_command)
                     }
-                    CommandType::File => {
-                        // output is being printed in the find_file function. might have to change
-                        // this later
+                    CommandType::File(result) => {
+                        println!("{}", result)
                     }
                     _ => {
                         println!("{} not found", type_command)
