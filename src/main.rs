@@ -2,6 +2,8 @@ use std::env;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 
+use is_executable::IsExecutable;
+
 enum CommandType {
     Builtin,
     File(String),
@@ -27,7 +29,7 @@ pub fn find_file(s: &str) -> Option<String> {
     let path_iterator = path.split(":");
     for path in path_iterator {
         let full_path = format!("{}/{}", path, s);
-        if std::path::Path::new(&full_path).exists() {
+        if std::path::Path::new(&full_path).is_executable() {
             // println!("{} is {}", s, full_path);
             let result = format!("{} is {}", s, full_path);
             return Some(result);
