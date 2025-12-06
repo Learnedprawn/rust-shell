@@ -9,22 +9,24 @@ enum CommandType {
 }
 
 impl CommandType {
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_str(s: &str, filepath: &mut &String) -> Self {
         match s {
             "exit" => CommandType::Builtin,
             "echo" => CommandType::Builtin,
             "type" => CommandType::Builtin,
-            command if find_file(s) => CommandType::File,
+            command if find_file(s, filepath) => CommandType::File,
             _ => CommandType::NotFound,
         }
     }
 }
 
-pub fn find_file(s: &str) -> bool {
+pub fn find_file(s: &str, filepath: &mut &String) -> bool {
     let path = env::var("PATH").expect("Path Parsing error");
     let path_iterator = path.split(":");
     for path in path_iterator {
-        if std::path::Path::new(path).exists() {
+        let full_path = format!("{}/{}", path, s);
+        if std::path::Path::new(&full_path).exists() {
+            println!("{} is {}", s, full_path);
             return true;
         }
     }
@@ -57,12 +59,14 @@ fn main() {
             }
             "type" => {
                 let type_command = input_iterator.next().expect("type command error");
-                match CommandType::from_str(type_command) {
+                let filepath = String::new();
+                match CommandType::from_str(type_command, &mut &filepath) {
                     CommandType::Builtin => {
                         println!("{} is a shell builtin", type_command)
                     }
                     CommandType::File => {
-                        println!("File exists")
+                        // output is being printed in the find_file function. might have to change
+                        // this later
                     }
                     _ => {
                         println!("{} not found", type_command)
