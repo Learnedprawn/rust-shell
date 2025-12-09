@@ -1,6 +1,6 @@
-use std::env;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::{env, process::Command};
 
 use is_executable::IsExecutable;
 
@@ -33,6 +33,24 @@ pub fn find_file(s: &str) -> Option<String> {
             // println!("{} is {}", s, full_path);
             let result = format!("{} is {}", s, full_path);
             return Some(result);
+        }
+    }
+    None
+}
+
+pub fn find_file_and_execute(s: &str) -> Option<String> {
+    let path = env::var("PATH").expect("Path Parsing error");
+    let path_iterator = path.split(":");
+    for path in path_iterator {
+        let full_path = format!("{}/{}", path, s);
+        if std::path::Path::new(&full_path).is_executable() {
+            println!("{} is {}", s, full_path);
+            let output = Command::new(path)
+                .output()
+                .expect("Found file execute error");
+            let result = format!("{} is {}", s, full_path);
+            println!("{:?}", output);
+            return Some(String::from_utf8_lossy(&output.stdout).to_string());
         }
     }
     None
@@ -72,9 +90,14 @@ fn main() {
                     }
                 }
             }
-            _ => {
-                print!("{}: command not found\n", command.trim());
-            }
+            _ => match find_file_and_execute(command) {
+                Some(result) => {
+                    println!("{}", result)
+                }
+                None => {
+                    print!("{}: command not found\n", command.trim());
+                }
+            },
         }
     }
 }
