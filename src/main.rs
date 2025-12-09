@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{env, process::Command};
+use std::{env, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
 
@@ -45,12 +45,12 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
     for path in path_iterator {
         let full_path = format!("{}/{}", path, command);
         if std::path::Path::new(&full_path).is_executable() {
-            let output = Command::new("/bin/sh")
+            Command::new("/bin/sh")
                 .arg("-c")
                 .args(input)
-                .output()
+                .spawn()
                 .expect("Found file execute error");
-            return Some(String::from_utf8_lossy(&output.stdout).to_string());
+            return Some(String::from_str("Done").unwrap());
         }
     }
     None
@@ -94,7 +94,7 @@ fn main() {
             }
             _ => match find_file_and_execute(input_vec) {
                 Some(result) => {
-                    println!("{}", result)
+                    // println!("{}", result)
                 }
                 None => {
                     print!("{}: command not found\n", command.trim());
