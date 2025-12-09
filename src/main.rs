@@ -45,11 +45,14 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
     for path in path_iterator {
         let full_path = format!("{}/{}", path, command);
         if std::path::Path::new(&full_path).is_executable() {
-            Command::new("/bin/sh")
+            let mut handle = Command::new("/bin/sh")
                 .arg("-c")
                 .args(input)
                 .spawn()
                 .expect("Found file execute error");
+
+            handle.wait().expect("handle failed");
+
             return Some(String::from_str("Done").unwrap());
         }
     }
