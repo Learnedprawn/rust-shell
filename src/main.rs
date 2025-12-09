@@ -42,12 +42,14 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
     let path = env::var("PATH").expect("Path Parsing error");
     let path_iterator = path.split(":");
     let command = input[0];
+    let args = &input[1..];
     for path in path_iterator {
         let full_path = format!("{}/{}", path, command);
         if std::path::Path::new(&full_path).is_executable() {
             let mut handle = Command::new("/bin/sh")
                 .arg("-c")
-                .args(input)
+                .arg(command)
+                .args(args)
                 .spawn()
                 .expect("Found file execute error");
 
