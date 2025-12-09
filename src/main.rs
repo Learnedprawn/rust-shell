@@ -105,12 +105,11 @@ fn main() {
                 let pwd = env::current_dir().expect("pwd fetch error");
                 println!("{}", pwd.to_str().expect("pwd string parsing failed"));
             }
-            "cd" => match env::set_current_dir(input_vec[1]) {
-                Ok(()) => {}
-                Err(_e) => {
+            "cd" => {
+                if let Err(_e) = env::set_current_dir(input_vec[1]) {
                     println!("cd: {}: No such file or directory", input_vec[1]);
                 }
-            },
+            }
             _ => match find_file_and_execute(input_vec) {
                 Some(_result) => {
                     // println!("{}", result)
