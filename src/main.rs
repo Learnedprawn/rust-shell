@@ -73,8 +73,6 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        let mut input_iterator = input.trim().split(" ");
-
         let input_vec: Vec<&str> = input.trim().split(" ").collect();
 
         let command: &str = input_vec[0];
@@ -82,19 +80,19 @@ fn main() {
         match command {
             "exit" => break,
             "echo" => {
-                for word in input_iterator {
+                for word in input_vec[1..].iter() {
                     print!("{} ", word);
                 }
                 print!("\n");
             }
             "type" => {
-                let type_command = input_iterator.next().expect("type command error");
+                let type_command = input_vec[1];
                 match CommandType::from_str(type_command) {
                     CommandType::Builtin => {
                         println!("{} is a shell builtin", type_command)
                     }
                     CommandType::File(result) => {
-                        println!("Hello: {}", result)
+                        println!("{}", result)
                     }
                     _ => {
                         println!("{} not found", type_command)
