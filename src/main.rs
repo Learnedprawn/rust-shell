@@ -44,7 +44,8 @@ pub fn find_file_and_execute(s: &str) -> Option<String> {
     for path in path_iterator {
         let full_path = format!("{}/{}", path, s);
         if std::path::Path::new(&full_path).is_executable() {
-            let output = Command::new(path)
+            let output = Command::new("sh")
+                .arg(path)
                 .output()
                 .expect("Found file execute error");
             let result = format!("{} is {}", s, full_path);
