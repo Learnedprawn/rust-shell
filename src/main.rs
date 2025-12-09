@@ -99,6 +99,10 @@ fn main() {
                     }
                 }
             }
+            "pwd" => {
+                let pwd = env::current_dir().expect("pwd fetch error");
+                println!("{}", pwd.to_str().expect("pwd string parsing failed"));
+            }
             _ => match find_file_and_execute(input_vec) {
                 Some(result) => {
                     // println!("{}", result)
