@@ -17,6 +17,7 @@ impl CommandType {
             "echo" => CommandType::Builtin,
             "type" => CommandType::Builtin,
             "pwd" => CommandType::Builtin,
+            "cd" => CommandType::Builtin,
             _ => match find_file(s) {
                 Some(result) => CommandType::File(result),
                 None => CommandType::NotFound,
@@ -104,8 +105,11 @@ fn main() {
                 let pwd = env::current_dir().expect("pwd fetch error");
                 println!("{}", pwd.to_str().expect("pwd string parsing failed"));
             }
+            "cd" => {
+                env::set_current_dir(input_vec[1]).expect("cd command failed");
+            }
             _ => match find_file_and_execute(input_vec) {
-                Some(result) => {
+                Some(_result) => {
                     // println!("{}", result)
                 }
                 None => {
