@@ -16,6 +16,7 @@ impl CommandType {
             "exit" => CommandType::Builtin,
             "echo" => CommandType::Builtin,
             "type" => CommandType::Builtin,
+            "pwd" => CommandType::Builtin,
             _ => match find_file(s) {
                 Some(result) => CommandType::File(result),
                 None => CommandType::NotFound,
