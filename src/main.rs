@@ -50,7 +50,6 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
                 .args(input)
                 .output()
                 .expect("Found file execute error");
-            println!("{:?}", output);
             return Some(String::from_utf8_lossy(&output.stdout).to_string());
         }
     }
@@ -68,7 +67,6 @@ fn main() {
         let mut input_iterator = input.trim().split(" ");
 
         let input_vec: Vec<&str> = input.trim().split(" ").collect();
-        println!("{:?}", input_vec);
 
         let command: &str = input_vec[0];
 
