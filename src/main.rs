@@ -38,17 +38,18 @@ pub fn find_file(s: &str) -> Option<String> {
     None
 }
 
-pub fn find_file_and_execute(s: &str) -> Option<String> {
+pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
     let path = env::var("PATH").expect("Path Parsing error");
     let path_iterator = path.split(":");
+    let command = input[0];
     for path in path_iterator {
-        let full_path = format!("{}/{}", path, s);
+        let full_path = format!("{}/{}", path, command);
         if std::path::Path::new(&full_path).is_executable() {
-            let output = Command::new("sh")
-                .arg(path)
+            let output = Command::new("/bin/sh")
+                .arg("-c")
+                .args(input)
                 .output()
                 .expect("Found file execute error");
-            let result = format!("{} is {}", s, full_path);
             println!("{:?}", output);
             return Some(String::from_utf8_lossy(&output.stdout).to_string());
         }
@@ -66,7 +67,10 @@ fn main() {
 
         let mut input_iterator = input.trim().split(" ");
 
-        let command: &str = input_iterator.next().expect("Command parse error");
+        let input_vec: Vec<&str> = input.trim().split(" ").collect();
+        println!("{:?}", input_vec);
+
+        let command: &str = input_vec[0];
 
         match command {
             "exit" => break,
@@ -90,7 +94,7 @@ fn main() {
                     }
                 }
             }
-            _ => match find_file_and_execute(command) {
+            _ => match find_file_and_execute(input_vec) {
                 Some(result) => {
                     println!("{}", result)
                 }
