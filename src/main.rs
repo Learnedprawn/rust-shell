@@ -44,7 +44,6 @@ pub fn find_file_and_execute(s: &str) -> Option<String> {
     for path in path_iterator {
         let full_path = format!("{}/{}", path, s);
         if std::path::Path::new(&full_path).is_executable() {
-            println!("{} is {}", s, full_path);
             let output = Command::new(path)
                 .output()
                 .expect("Found file execute error");
@@ -83,7 +82,7 @@ fn main() {
                         println!("{} is a shell builtin", type_command)
                     }
                     CommandType::File(result) => {
-                        println!("{}", result)
+                        println!("Hello: {}", result)
                     }
                     _ => {
                         println!("{} not found", type_command)
