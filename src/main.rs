@@ -69,6 +69,7 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
 }
 
 fn main() {
+    let mut history_list: Vec<String> = vec![];
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -79,6 +80,7 @@ fn main() {
         let input_vec: Vec<&str> = input.trim().split(" ").collect();
 
         let command: &str = input_vec[0];
+        history_list.push(input[..input.len() - 1].to_string());
 
         match command {
             "exit" => break,
@@ -114,6 +116,11 @@ fn main() {
                 }
                 if let Err(_e) = env::set_current_dir(&path) {
                     println!("cd: {}: No such file or directory", path)
+                }
+            }
+            "history" => {
+                for (i, exp) in history_list.iter().enumerate() {
+                    println!("{} {}", i + 1, exp);
                 }
             }
             _ => match find_file_and_execute(input_vec) {
