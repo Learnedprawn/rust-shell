@@ -106,8 +106,13 @@ fn main() {
                 println!("{}", pwd.to_str().expect("pwd string parsing failed"));
             }
             "cd" => {
-                if let Err(_e) = env::set_current_dir(input_vec[1]) {
-                    println!("cd: {}: No such file or directory", input_vec[1]);
+                let mut path = input_vec[1].to_string();
+                if input_vec[1].starts_with("~") {
+                    let home = env::var("HOME").expect("Home ENV variable");
+                    path = format!("{}{}", home, &input_vec[1][1..]);
+                }
+                if let Err(_e) = env::set_current_dir(&path) {
+                    println!("cd: {}: No such file or directory", path)
                 }
             }
             _ => match find_file_and_execute(input_vec) {
