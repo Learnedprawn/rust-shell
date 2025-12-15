@@ -18,6 +18,7 @@ impl CommandType {
             "type" => CommandType::Builtin,
             "pwd" => CommandType::Builtin,
             "cd" => CommandType::Builtin,
+            "history" => CommandType::Builtin,
             _ => match find_file(s) {
                 Some(result) => CommandType::File(result),
                 None => CommandType::NotFound,
