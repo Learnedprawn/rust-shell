@@ -122,12 +122,11 @@ fn main() {
                 let number = input_vec.get(1);
                 match number {
                     Some(num) => {
-                        let numeric_num: usize = num.parse().unwrap();
-                        for (i, exp) in history_list[(history_list.len() - numeric_num)..]
-                            .iter()
-                            .enumerate()
-                        {
-                            println!("{} {}", i + 1, exp);
+                        let numeric_num: usize = num.parse().expect("parsing history failed");
+                        for (i, exp) in history_list.iter().enumerate() {
+                            if i + 1 > history_list.len() - numeric_num {
+                                println!("{} {}", i + 1, exp);
+                            }
                         }
                     }
                     None => {
