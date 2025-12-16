@@ -1,3 +1,4 @@
+use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{env, process::Command, str::FromStr};
@@ -69,18 +70,22 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
 }
 
 fn main() {
+    let mut rl = DefaultEditor::new().expect("rustyline init error");
     let mut history_list: Vec<String> = vec![];
     loop {
-        print!("$ ");
-        io::stdout().flush().unwrap();
+        let input = rl.readline("$ ").expect("line reading failed");
+        // print!("$ ");
+        // io::stdout().flush().unwrap();
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        // let mut input = String::new();
+        // io::stdin().read_line(&mut input).unwrap();
 
+        rl.add_history_entry(input.clone())
+            .expect("Error in adding history");
         let input_vec: Vec<&str> = input.trim().split(" ").collect();
 
         let command: &str = input_vec[0];
-        history_list.push(input[..input.len() - 1].to_string());
+        history_list.push(input[..input.len()].to_string());
 
         match command {
             "exit" => break,
