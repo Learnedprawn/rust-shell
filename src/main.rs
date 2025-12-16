@@ -119,8 +119,22 @@ fn main() {
                 }
             }
             "history" => {
-                for (i, exp) in history_list.iter().enumerate() {
-                    println!("{} {}", i + 1, exp);
+                let number = input_vec.get(1);
+                match number {
+                    Some(num) => {
+                        let numeric_num: usize = num.parse().unwrap();
+                        for (i, exp) in history_list[(history_list.len() - numeric_num)..]
+                            .iter()
+                            .enumerate()
+                        {
+                            println!("{} {}", i + 1, exp);
+                        }
+                    }
+                    None => {
+                        for (i, exp) in history_list.iter().enumerate() {
+                            println!("{} {}", i + 1, exp);
+                        }
+                    }
                 }
             }
             _ => match find_file_and_execute(input_vec) {
