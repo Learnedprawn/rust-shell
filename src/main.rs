@@ -1,6 +1,7 @@
 use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::mem::take;
 use std::{env, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
@@ -12,15 +13,15 @@ enum CommandType {
 }
 
 impl CommandType {
-    pub fn from_str(s: &str) -> Self {
-        match s {
+    pub fn from_str(s: String) -> Self {
+        match s.as_str() {
             "exit" => CommandType::Builtin,
             "echo" => CommandType::Builtin,
             "type" => CommandType::Builtin,
             "pwd" => CommandType::Builtin,
             "cd" => CommandType::Builtin,
             "history" => CommandType::Builtin,
-            _ => match find_file(s) {
+            _ => match find_file(s.as_str()) {
                 Some(result) => CommandType::File(result),
                 None => CommandType::NotFound,
             },
@@ -42,10 +43,10 @@ pub fn find_file(s: &str) -> Option<String> {
     None
 }
 
-pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
+pub fn find_file_and_execute(input: Vec<String>) -> Option<String> {
     let path = env::var("PATH").expect("Path Parsing error");
     let path_iterator = path.split(":");
-    let command = input[0];
+    let command = input[0].clone();
     let args = &input[1..];
     for path in path_iterator {
         let full_path = format!("{}/{}", path, command);
@@ -71,7 +72,6 @@ pub fn find_file_and_execute(input: Vec<&str>) -> Option<String> {
 
 fn main() {
     let mut rl = DefaultEditor::new().expect("rustyline init error");
-    let mut history_list: Vec<String> = vec![];
     loop {
         let input = rl.readline("$ ").expect("line reading failed");
         // print!("$ ");
@@ -82,24 +82,31 @@ fn main() {
 
         rl.add_history_entry(input.clone())
             .expect("Error in adding history");
-        let input_vec: Vec<&str> = input.trim().split(" ").collect();
+        let mut current_buffer: String = String::new();
+        let mut input_vec: Vec<String> = vec![];
+        for character in input.chars() {
+            if character == ' ' && !current_buffer.is_empty() {
+                input_vec.push(take(&mut current_buffer));
+                continue;
+            }
+            current_buffer.push(character);
+        }
+        input_vec.push(current_buffer);
 
-        let command: &str = input_vec[0];
-        history_list.push(input[..input.len()].to_string());
+        let command = input_vec[0].as_str();
+
+        // let literals: String = String::new();
 
         match command {
             "exit" => break,
             "echo" => {
-                for word in input_vec[1..].iter() {
-                    print!("{} ", word);
-                }
-                print!("\n");
+                println!("{}", input_vec[1..].join(" "));
             }
             "type" => {
-                let type_command = input_vec[1];
-                match CommandType::from_str(type_command) {
+                let type_command = input_vec[1].clone();
+                match CommandType::from_str(type_command.clone()) {
                     CommandType::Builtin => {
-                        println!("{} is a shell builtin", type_command)
+                        println!("{} is a shell builtin", type_command.clone())
                     }
                     CommandType::File(result) => {
                         println!("{}", result)
@@ -125,6 +132,7 @@ fn main() {
             }
             "history" => {
                 let number = input_vec.get(1);
+                let history_list: Vec<&String> = rl.history().iter().collect();
                 match number {
                     Some(num) => {
                         let numeric_num: usize = num.parse().expect("parsing history failed");
@@ -141,7 +149,7 @@ fn main() {
                     }
                 }
             }
-            _ => match find_file_and_execute(input_vec) {
+            _ => match find_file_and_execute(input_vec.clone()) {
                 Some(_result) => {
                     // println!("{}", result)
                 }
