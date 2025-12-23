@@ -95,6 +95,9 @@ fn main() {
                 continue;
             }
             if !in_quotes {
+                if character == ' ' && current_buffer.is_empty() {
+                    continue;
+                }
                 if character == ' ' && !current_buffer.is_empty() {
                     input_vec.push(take(&mut current_buffer));
                     continue;
