@@ -94,6 +94,16 @@ fn main() {
             //     character, in_double_quotes, backslashed
             // );
             if backslashed {
+                if in_double_quotes {
+                    if special.contains(&character) {
+                        current_buffer.push(character);
+                        continue;
+                    }
+                    current_buffer.push('\\');
+                    current_buffer.push(character);
+                    backslashed = false;
+                    continue;
+                }
                 current_buffer.push(character);
                 backslashed = false;
                 continue;
@@ -104,9 +114,7 @@ fn main() {
                     continue;
                 }
                 if in_double_quotes {
-                    if special.contains(&character) {
-                        backslashed = true;
-                    }
+                    backslashed = true;
                     continue;
                 }
                 backslashed = true;
