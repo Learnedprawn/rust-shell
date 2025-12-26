@@ -102,7 +102,7 @@ fn main() {
                     current_buffer.push(character);
                     continue;
                 }
-                if !in_double_quotes {
+                if in_double_quotes {
                     backslashed = true;
                     continue;
                 }
