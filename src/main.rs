@@ -87,6 +87,7 @@ fn main() {
         let mut in_single_quotes = false;
         let mut in_double_quotes = false;
         let mut backslashed = false;
+        let special = vec!['"', '\\'];
         for character in input.chars() {
             // println!(
             //     "character: {}, in_double_quotes: {}, backslashed: {}",
@@ -102,10 +103,12 @@ fn main() {
                     current_buffer.push(character);
                     continue;
                 }
-                // if in_double_quotes {
-                //     backslashed = true;
-                //     continue;
-                // }
+                if in_double_quotes {
+                    if special.contains(&character) {
+                        backslashed = true;
+                    }
+                    continue;
+                }
                 backslashed = true;
                 continue;
             }
