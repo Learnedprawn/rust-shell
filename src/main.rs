@@ -98,6 +98,10 @@ fn main() {
                 continue;
             }
             if character == '\\' {
+                if in_single_quotes {
+                    current_buffer.push(character);
+                    continue;
+                }
                 if !in_double_quotes {
                     backslashed = true;
                     continue;
