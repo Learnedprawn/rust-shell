@@ -88,6 +88,10 @@ fn main() {
         let mut in_double_quotes = false;
         let mut backslashed = false;
         for character in input.chars() {
+            println!(
+                "character: {}, in_double_quotes: {}, backslashed: {}",
+                character, in_double_quotes, backslashed
+            );
             if backslashed {
                 current_buffer.push(character);
                 backslashed = false;
@@ -98,6 +102,7 @@ fn main() {
                     backslashed = true;
                     continue;
                 }
+                current_buffer.push(character);
                 continue;
             }
             if character == '\'' && !in_double_quotes {
