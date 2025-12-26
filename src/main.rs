@@ -86,7 +86,17 @@ fn main() {
         let mut input_vec: Vec<String> = vec![];
         let mut in_single_quotes = false;
         let mut in_double_quotes = false;
+        let mut backslashed = false;
         for character in input.chars() {
+            if backslashed {
+                current_buffer.push(character);
+                backslashed = false;
+                continue;
+            }
+            if character == '\\' {
+                backslashed = true;
+                continue;
+            }
             if character == '\'' && !in_double_quotes {
                 if in_single_quotes {
                     in_single_quotes = false;
