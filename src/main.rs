@@ -84,17 +84,26 @@ fn main() {
             .expect("Error in adding history");
         let mut current_buffer: String = String::new();
         let mut input_vec: Vec<String> = vec![];
-        let mut in_quotes = false;
+        let mut in_single_quotes = false;
+        let mut in_double_quotes = false;
         for character in input.chars() {
-            if character == '\'' {
-                if in_quotes {
-                    in_quotes = false;
+            if character == '\'' && !in_double_quotes {
+                if in_single_quotes {
+                    in_single_quotes = false;
                 } else {
-                    in_quotes = true;
+                    in_single_quotes = true;
                 }
                 continue;
             }
-            if !in_quotes {
+            if character == '"' && !in_single_quotes {
+                if in_double_quotes {
+                    in_double_quotes = false;
+                } else {
+                    in_double_quotes = true;
+                }
+                continue;
+            }
+            if !in_single_quotes && !in_double_quotes {
                 if character == ' ' && current_buffer.is_empty() {
                     continue;
                 }
@@ -106,7 +115,7 @@ fn main() {
             current_buffer.push(character);
         }
         input_vec.push(current_buffer);
-        if in_quotes {
+        if in_single_quotes {
             panic!("Improper quotation use");
         }
 
