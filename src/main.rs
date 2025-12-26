@@ -94,7 +94,9 @@ fn main() {
                 continue;
             }
             if character == '\\' {
-                backslashed = true;
+                if !(in_single_quotes || in_double_quotes) {
+                    backslashed = true;
+                }
                 continue;
             }
             if character == '\'' && !in_double_quotes {
