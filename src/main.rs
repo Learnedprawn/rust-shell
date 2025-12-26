@@ -97,6 +97,7 @@ fn main() {
                 if in_double_quotes {
                     if special.contains(&character) {
                         current_buffer.push(character);
+                        backslashed = false;
                         continue;
                     }
                     current_buffer.push('\\');
