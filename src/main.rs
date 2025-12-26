@@ -94,10 +94,10 @@ fn main() {
                 continue;
             }
             if character == '\\' {
-                if !(in_single_quotes || in_double_quotes) {
+                if !in_double_quotes {
+                    backslashed = true;
                     continue;
                 }
-                backslashed = true;
                 continue;
             }
             if character == '\'' && !in_double_quotes {
