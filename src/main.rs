@@ -85,8 +85,6 @@ fn main() {
                 eprintln!("Quoting error: {:?}", e);
             })
             .unwrap();
-        println!("input_vec: {:?}", input_vec);
-        println!("redirection: {:?}", redirection);
 
         let mut out: Box<dyn Write>;
         out = match redirection {
