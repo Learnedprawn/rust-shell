@@ -1,10 +1,13 @@
+mod parser;
+
 use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::mem::take;
 use std::{env, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
+
+use crate::parser::parse_line;
 
 enum CommandType {
     Builtin,
@@ -74,93 +77,34 @@ fn main() {
     let mut rl = DefaultEditor::new().expect("rustyline init error");
     loop {
         let input = rl.readline("$ ").expect("line reading failed");
-        // print!("$ ");
-        // io::stdout().flush().unwrap();
-
-        // let mut input = String::new();
-        // io::stdin().read_line(&mut input).unwrap();
 
         rl.add_history_entry(input.clone())
             .expect("Error in adding history");
-        let mut current_buffer: String = String::new();
-        let mut input_vec: Vec<String> = vec![];
-        let mut in_single_quotes = false;
-        let mut in_double_quotes = false;
-        let mut backslashed = false;
-        let special = vec!['"', '\\'];
-        for character in input.chars() {
-            // println!(
-            //     "character: {}, in_double_quotes: {}, backslashed: {}",
-            //     character, in_double_quotes, backslashed
-            // );
-            if backslashed {
-                if in_double_quotes {
-                    if special.contains(&character) {
-                        current_buffer.push(character);
-                        backslashed = false;
-                        continue;
-                    }
-                    current_buffer.push('\\');
-                    current_buffer.push(character);
-                    backslashed = false;
-                    continue;
-                }
-                current_buffer.push(character);
-                backslashed = false;
-                continue;
-            }
-            if character == '\\' {
-                if in_single_quotes {
-                    current_buffer.push(character);
-                    continue;
-                }
-                if in_double_quotes {
-                    backslashed = true;
-                    continue;
-                }
-                backslashed = true;
-                continue;
-            }
-            if character == '\'' && !in_double_quotes {
-                if in_single_quotes {
-                    in_single_quotes = false;
-                } else {
-                    in_single_quotes = true;
-                }
-                continue;
-            }
-            if character == '"' && !in_single_quotes {
-                if in_double_quotes {
-                    in_double_quotes = false;
-                } else {
-                    in_double_quotes = true;
-                }
-                continue;
-            }
-            if !in_single_quotes && !in_double_quotes {
-                if character == ' ' && current_buffer.is_empty() {
-                    continue;
-                }
-                if character == ' ' && !current_buffer.is_empty() {
-                    input_vec.push(take(&mut current_buffer));
-                    continue;
-                }
-            }
-            current_buffer.push(character);
-        }
-        input_vec.push(current_buffer);
-        if in_single_quotes {
-            panic!("Improper quotation use");
-        }
+        let (input_vec, redirection) = parse_line(input)
+            .map_err(|e| {
+                eprintln!("Quoting error: {:?}", e);
+            })
+            .unwrap();
+        println!("input_vec: {:?}", input_vec);
+        println!("redirection: {:?}", redirection);
+
+        let mut out: Box<dyn Write>;
+        out = match redirection {
+            Some(path) => Box::new(std::fs::File::create(path).unwrap()),
+            None => Box::new(std::io::stdout()),
+        };
+
+        // if in_single_quotes {
+        //     panic!("Improper quotation use");
+        // }
 
         let command = input_vec[0].as_str();
-
-        // let literals: String = String::new();
 
         match command {
             "exit" => break,
             "echo" => {
-                println!("{}", input_vec[1..].join(" "));
+                writeln!(&mut out, "{}", input_vec[1..].join(" ")).expect("echo write failed");
+                // println!("{}", input_vec[1..].join(" "));
             }
             "type" => {
                 let type_command = input_vec[1].clone();
