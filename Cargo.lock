@@ -48,6 +48,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "is_executable",
+ "libc",
  "rustyline",
  "thiserror",
 ]

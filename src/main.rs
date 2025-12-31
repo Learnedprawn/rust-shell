@@ -3,7 +3,13 @@ mod parser;
 use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{env, process::Command, str::FromStr};
+use std::{
+    env,
+    fs::File,
+    os::fd::AsRawFd,
+    process::{Command, Stdio},
+    str::FromStr,
+};
 
 use is_executable::IsExecutable;
 
@@ -61,6 +67,7 @@ pub fn find_file_and_execute(input: Vec<String>) -> Option<String> {
             //     .spawn()
             //     .expect("Found file execute error");
             let mut handle = Command::new(command)
+                // .stdout(out)
                 .args(args)
                 .spawn()
                 .expect("handle failed");
@@ -85,12 +92,26 @@ fn main() {
                 eprintln!("Quoting error: {:?}", e);
             })
             .unwrap();
-
-        let mut out: Box<dyn Write>;
-        out = match redirection {
-            Some(path) => Box::new(std::fs::File::create(path).unwrap()),
-            None => Box::new(std::io::stdout()),
+        let saved_stdout;
+        unsafe {
+            saved_stdout = libc::dup(1);
+        }
+        match redirection {
+            Some(path) => {
+                let file = std::fs::File::create(path).unwrap();
+                let file_fd = file.as_raw_fd();
+                unsafe {
+                    libc::dup2(file_fd, 1);
+                }
+            }
+            None => {}
         };
+
+        // let out: Stdio;
+        // out = match redirection {
+        //     Some(path) => std::fs::File::create(path).unwrap().into(),
+        //     None => Stdio::inherit(),
+        // };
 
         // if in_single_quotes {
         //     panic!("Improper quotation use");
@@ -101,8 +122,8 @@ fn main() {
         match command {
             "exit" => break,
             "echo" => {
-                writeln!(&mut out, "{}", input_vec[1..].join(" ")).expect("echo write failed");
-                // println!("{}", input_vec[1..].join(" "));
+                // writeln!(&mut out, "{}", input_vec[1..].join(" ")).expect("echo write failed");
+                println!("{}", input_vec[1..].join(" "));
             }
             "type" => {
                 let type_command = input_vec[1].clone();
@@ -159,6 +180,10 @@ fn main() {
                     print!("{}: command not found\n", command.trim());
                 }
             },
+        }
+        unsafe {
+            libc::dup2(saved_stdout, 1);
+            libc::close(saved_stdout);
         }
     }
 }
