@@ -59,10 +59,7 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>), ()> {
                     }
                     continue;
                 }
-                if character == '>'
-                    || (character == '1'
-                        && line_iter.peek().expect("How can this fail").clone() == '>')
-                {
+                if character == '>' || (character == '1' && matches!(line_iter.peek(), Some('>'))) {
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
