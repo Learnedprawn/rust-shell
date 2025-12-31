@@ -91,7 +91,7 @@ fn main() {
             .map_err(|e| {
                 eprintln!("Quoting error: {:?}", e);
             })
-            .unwrap();
+            .expect("parse_line failed");
         let saved_stdout;
         unsafe {
             saved_stdout = libc::dup(1);
