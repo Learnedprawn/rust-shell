@@ -62,7 +62,6 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
                     continue;
                 }
                 if character == '2' && matches!(line_iter.peek(), Some('>')) {
-                    println!("This is called");
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
@@ -71,7 +70,6 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
                     continue;
                 }
                 if character == '>' || (character == '1' && matches!(line_iter.peek(), Some('>'))) {
-                    println!("Also This is called");
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
@@ -79,9 +77,7 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
                     continue;
                 }
                 if err_redirected {
-                    println!("Then This is called");
                     if character == ' ' && !current_buffer.is_empty() {
-                        println!("Inside");
                         err_redirection = Some(take(&mut current_buffer));
                         err_redirected = false;
                     }
