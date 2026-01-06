@@ -3,13 +3,7 @@ mod parser;
 use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{
-    env,
-    fs::File,
-    os::fd::AsRawFd,
-    process::{Command, Stdio},
-    str::FromStr,
-};
+use std::{env, os::fd::AsRawFd, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
 
@@ -87,14 +81,16 @@ fn main() {
 
         rl.add_history_entry(input.clone())
             .expect("Error in adding history");
-        let (input_vec, redirection) = parse_line(input)
+        let (input_vec, redirection, err_redirection) = parse_line(input)
             .map_err(|e| {
                 eprintln!("Quoting error: {:?}", e);
             })
             .expect("parse_line failed");
         let saved_stdout;
+        let saved_stderr;
         unsafe {
             saved_stdout = libc::dup(1);
+            saved_stderr = libc::dup(2);
         }
         match redirection {
             Some(path) => {
@@ -106,12 +102,16 @@ fn main() {
             }
             None => {}
         };
-
-        // let out: Stdio;
-        // out = match redirection {
-        //     Some(path) => std::fs::File::create(path).unwrap().into(),
-        //     None => Stdio::inherit(),
-        // };
+        match err_redirection {
+            Some(path) => {
+                let file = std::fs::File::create(path).unwrap();
+                let file_fd = file.as_raw_fd();
+                unsafe {
+                    libc::dup2(file_fd, 2);
+                }
+            }
+            None => {}
+        };
 
         // if in_single_quotes {
         //     panic!("Improper quotation use");
@@ -184,6 +184,8 @@ fn main() {
         unsafe {
             libc::dup2(saved_stdout, 1);
             libc::close(saved_stdout);
+            libc::dup2(saved_stderr, 2);
+            libc::close(saved_stderr);
         }
     }
 }

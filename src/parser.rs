@@ -1,14 +1,16 @@
 //You give a line to the parser and it returns parsed input_vec outside
 use std::mem::take;
 
-pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>), ()> {
+pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<String>), ()> {
     let mut current_buffer: String = String::new();
     let mut input_vec: Vec<String> = vec![];
     let mut in_single_quotes = false;
     let mut in_double_quotes = false;
     let mut backslashed = false;
     let mut redirected = false;
+    let mut err_redirected = false;
     let mut redirection: Option<String> = None;
+    let mut err_redirection: Option<String> = None;
     let special = vec!['"', '\\'];
     let mut line_iter = line.chars().peekable();
     // for character in line_iter.by_ref() {
@@ -59,19 +61,32 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>), ()> {
                     }
                     continue;
                 }
+                if character == '2' && matches!(line_iter.peek(), Some('>')) {
+                    println!("This is called");
+                    if !current_buffer.is_empty() {
+                        input_vec.push(take(&mut current_buffer));
+                    }
+                    err_redirected = true;
+                    line_iter.next();
+                    continue;
+                }
                 if character == '>' || (character == '1' && matches!(line_iter.peek(), Some('>'))) {
+                    println!("Also This is called");
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
                     redirected = true;
                     continue;
                 }
+                if err_redirected {
+                    println!("Then This is called");
+                    if character == ' ' && !current_buffer.is_empty() {
+                        println!("Inside");
+                        err_redirection = Some(take(&mut current_buffer));
+                        err_redirected = false;
+                    }
+                }
                 if redirected {
-                    // println!(
-                    //     "Character is {}, current_buffer_status: {}",
-                    //     character,
-                    //     current_buffer.is_empty()
-                    // );
                     if character == ' ' && !current_buffer.is_empty() {
                         redirection = Some(take(&mut current_buffer));
                         redirected = false;
@@ -94,9 +109,11 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>), ()> {
     }
     if redirected {
         redirection = Some(current_buffer);
+    } else if err_redirected {
+        err_redirection = Some(current_buffer);
     } else {
         input_vec.push(current_buffer);
     }
 
-    Ok((input_vec, redirection))
+    Ok((input_vec, redirection, err_redirection))
 }
