@@ -2,7 +2,7 @@
 
 A Unix-like shell written in Rust, built as part of the CodeCrafters Shell challenge and extended beyond the basics to cover real shell behavior.
 
-This project focuses on understanding how shells actually work under the hood, not just spawning processes and calling it a day.
+This project focuses on understanding how shells actually work under the hood.
 
 ## Features
 
