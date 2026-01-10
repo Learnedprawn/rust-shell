@@ -3,11 +3,11 @@ mod parser;
 use rustyline::DefaultEditor;
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{env, os::fd::AsRawFd, process::Command, str::FromStr};
+use std::{env, fs::OpenOptions, os::fd::AsRawFd, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
 
-use crate::parser::parse_line;
+use crate::parser::{Redirection, parse_line};
 
 enum CommandType {
     Builtin,
@@ -93,23 +93,41 @@ fn main() {
             saved_stderr = libc::dup(2);
         }
         match redirection {
-            Some(path) => {
-                let file = std::fs::File::create(path).unwrap();
-                let file_fd = file.as_raw_fd();
-                unsafe {
-                    libc::dup2(file_fd, 1);
+            Some(action) => match action {
+                Redirection::Redirect(path) => {
+                    let file = std::fs::File::create(path).unwrap();
+                    let file_fd = file.as_raw_fd();
+                    unsafe {
+                        libc::dup2(file_fd, 1);
+                    }
                 }
-            }
+                Redirection::Append(path) => {
+                    let file = OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(path)
+                        .expect("Append File Opening error");
+                    let file_fd = file.as_raw_fd();
+                    unsafe {
+                        libc::dup2(file_fd, 1);
+                    }
+                }
+                _ => {}
+            },
             None => {}
         };
         match err_redirection {
-            Some(path) => {
-                let file = std::fs::File::create(path).unwrap();
-                let file_fd = file.as_raw_fd();
-                unsafe {
-                    libc::dup2(file_fd, 2);
+            Some(action) => match action {
+                Redirection::RedirectErr(path) => {
+                    let file = std::fs::File::create(path).unwrap();
+                    let file_fd = file.as_raw_fd();
+                    unsafe {
+                        libc::dup2(file_fd, 2);
+                    }
                 }
-            }
+                Redirection::AppendErr(path) => {}
+                _ => {}
+            },
             None => {}
         };
 

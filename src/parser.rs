@@ -1,16 +1,26 @@
 //You give a line to the parser and it returns parsed input_vec outside
-use std::mem::take;
+use std::{mem::take, path::PathBuf};
 
-pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<String>), ()> {
+pub enum Redirection {
+    Redirect(PathBuf),
+    RedirectErr(PathBuf),
+    Append(PathBuf),
+    AppendErr(PathBuf),
+}
+
+pub fn parse_line(
+    line: String,
+) -> Result<(Vec<String>, Option<Redirection>, Option<Redirection>), ()> {
     let mut current_buffer: String = String::new();
     let mut input_vec: Vec<String> = vec![];
     let mut in_single_quotes = false;
     let mut in_double_quotes = false;
     let mut backslashed = false;
     let mut redirected = false;
+    let mut appended = false;
     let mut err_redirected = false;
-    let mut redirection: Option<String> = None;
-    let mut err_redirection: Option<String> = None;
+    let mut redirection: Option<Redirection> = None;
+    let mut err_redirection: Option<Redirection> = None;
     let special = vec!['"', '\\'];
     let mut line_iter = line.chars().peekable();
     // for character in line_iter.by_ref() {
@@ -61,6 +71,14 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
                     }
                     continue;
                 }
+                if character == '>' && matches!(line_iter.peek(), Some('>')) {
+                    if !current_buffer.is_empty() {
+                        input_vec.push(take(&mut current_buffer));
+                    }
+                    appended = true;
+                    line_iter.next();
+                    continue;
+                }
                 if character == '2' && matches!(line_iter.peek(), Some('>')) {
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
@@ -69,23 +87,48 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
                     line_iter.next();
                     continue;
                 }
-                if character == '>' || (character == '1' && matches!(line_iter.peek(), Some('>'))) {
+                if character == '>' {
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
                     redirected = true;
                     continue;
                 }
+                if character == '1' && matches!(line_iter.peek(), Some('>')) {
+                    if !current_buffer.is_empty() {
+                        input_vec.push(take(&mut current_buffer));
+                    }
+                    line_iter.next();
+                    if matches!(line_iter.peek(), Some('>')) {
+                        line_iter.next();
+                        appended = true;
+                        continue;
+                    }
+                    redirected = true;
+                    continue;
+                }
                 if err_redirected {
                     if character == ' ' && !current_buffer.is_empty() {
-                        err_redirection = Some(take(&mut current_buffer));
+                        err_redirection = Some(Redirection::RedirectErr(PathBuf::from(take(
+                            &mut current_buffer,
+                        ))));
                         err_redirected = false;
                     }
                 }
                 if redirected {
                     if character == ' ' && !current_buffer.is_empty() {
-                        redirection = Some(take(&mut current_buffer));
+                        redirection = Some(Redirection::Redirect(PathBuf::from(take(
+                            &mut current_buffer,
+                        ))));
                         redirected = false;
+                    }
+                }
+                if appended {
+                    if character == ' ' && !current_buffer.is_empty() {
+                        redirection = Some(Redirection::Append(PathBuf::from(take(
+                            &mut current_buffer,
+                        ))));
+                        appended = false;
                     }
                 }
                 if !in_single_quotes && !in_double_quotes {
@@ -104,9 +147,11 @@ pub fn parse_line(line: String) -> Result<(Vec<String>, Option<String>, Option<S
         // }
     }
     if redirected {
-        redirection = Some(current_buffer);
+        redirection = Some(Redirection::Redirect(PathBuf::from(current_buffer)));
     } else if err_redirected {
-        err_redirection = Some(current_buffer);
+        err_redirection = Some(Redirection::RedirectErr(PathBuf::from(current_buffer)));
+    } else if appended {
+        redirection = Some(Redirection::Append(PathBuf::from(current_buffer)));
     } else {
         input_vec.push(current_buffer);
     }
