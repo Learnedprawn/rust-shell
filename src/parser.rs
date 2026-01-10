@@ -18,6 +18,7 @@ pub fn parse_line(
     let mut backslashed = false;
     let mut redirected = false;
     let mut appended = false;
+    let mut err_appended = false;
     let mut err_redirected = false;
     let mut redirection: Option<Redirection> = None;
     let mut err_redirection: Option<Redirection> = None;
@@ -83,8 +84,13 @@ pub fn parse_line(
                     if !current_buffer.is_empty() {
                         input_vec.push(take(&mut current_buffer));
                     }
-                    err_redirected = true;
                     line_iter.next();
+                    if matches!(line_iter.peek(), Some('>')) {
+                        line_iter.next();
+                        err_appended = true;
+                        continue;
+                    }
+                    err_redirected = true;
                     continue;
                 }
                 if character == '>' {
@@ -152,6 +158,8 @@ pub fn parse_line(
         err_redirection = Some(Redirection::RedirectErr(PathBuf::from(current_buffer)));
     } else if appended {
         redirection = Some(Redirection::Append(PathBuf::from(current_buffer)));
+    } else if err_appended {
+        err_redirection = Some(Redirection::AppendErr(PathBuf::from(current_buffer)));
     } else {
         input_vec.push(current_buffer);
     }

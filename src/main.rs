@@ -125,7 +125,17 @@ fn main() {
                         libc::dup2(file_fd, 2);
                     }
                 }
-                Redirection::AppendErr(path) => {}
+                Redirection::AppendErr(path) => {
+                    let file = OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(path)
+                        .expect("Append File Opening error");
+                    let file_fd = file.as_raw_fd();
+                    unsafe {
+                        libc::dup2(file_fd, 2);
+                    }
+                }
                 _ => {}
             },
             None => {}
