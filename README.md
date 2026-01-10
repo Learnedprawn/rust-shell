@@ -17,8 +17,6 @@ The shell supports a substantial subset of POSIX-style shell behavior:
 * Tab-based autocompletion for commands and paths
 * Proper error handling and exit codes
 
-In short, it behaves like a shell you would not immediately rage-quit.
-
 ## Why this exists
 
 Shells sit at the boundary between humans and the kernel. Writing one forces you to understand:
@@ -28,7 +26,7 @@ Shells sit at the boundary between humans and the kernel. Writing one forces you
 * Parsing and tokenization
 * Unix conventions that everyone uses but few explain clearly
 
-Rust adds an extra layer of discipline. You get memory safety while still doing very un-safety-adjacent things.
+Rust adds an extra layer of discipline.
 
 ## Architecture overview
 
@@ -37,8 +35,6 @@ Rust adds an extra layer of discipline. You get memory safety while still doing 
 * A command executor that manages processes and file descriptors
 * Built-in command handling without spawning unnecessary processes
 * History and completion layers that integrate cleanly with the REPL loop
-
-The design favors clarity over cleverness. Debuggable beats magical.
 
 ## Getting started
 
@@ -56,8 +52,6 @@ cargo build
 cargo run
 ```
 
-You will land in the shell prompt. From there, use it like a normal shell and try to break it.
-
 ## Examples
 
 ```bash
@@ -74,14 +68,11 @@ If you do something illegal, it complains politely.
 * No job control yet
 * No environment variable expansion beyond basics
 
-These are deliberate omissions, not accidents.
-
 ## What I learned
 
 * Writing a shell is mostly about edge cases
 * Parsing is harder than execution
 * Unix APIs are sharp tools that reward respect
-* Rust is very good at preventing “oops” moments when dealing with low-level systems code
 
 ## Credits
 
