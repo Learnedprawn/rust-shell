@@ -127,7 +127,7 @@ fn main() {
     // let prompt = DefaultPrompt::default();
     impl Prompt for MyPrompt {
         fn render_prompt_left(&self) -> Cow<'_, str> {
-            Cow::Borrowed("$ ")
+            Cow::Borrowed("")
         }
 
         fn render_prompt_right(&self) -> Cow<'_, str> {
@@ -162,18 +162,20 @@ fn main() {
     //         }
     //     }
     // }
-    // let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
-    let prompt = MyPrompt {
-        left_prompt: "".to_string(),
-        right_prompt: "".to_string(),
-    };
+    let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
+    // let prompt = MyPrompt {
+    //     left_prompt: "".to_string(),
+    //     right_prompt: "".to_string(),
+    // };
     // rl.set_helper(Some(h));
     loop {
+        rl.run_edit_commands(&[EditCommand::InsertString("$ ".to_string())]);
         let input = rl.read_line(&prompt);
         if let Ok(Signal::Success(input)) = input {
             // rl.add_history_entry(input.clone())
             //     .expect("Error in adding history");
-            let (input_vec, redirection, err_redirection) = parse_line(input)
+            let buffer = input[2..].to_string();
+            let (input_vec, redirection, err_redirection) = parse_line(buffer)
                 .map_err(|e| {
                     eprintln!("Quoting error: {:?}", e);
                 })
