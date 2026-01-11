@@ -124,12 +124,11 @@ fn main() {
         .with_menu(reedline::ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
     // let prompt = DefaultPrompt::default();
-    let prompt = DefaultPrompt::new(
-        DefaultPromptSegment::Basic("$ ".into()),
-        DefaultPromptSegment::Empty,
-    );
+    let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
     // rl.set_helper(Some(h));
     loop {
+        print!("$ ");
+        io::stdout().flush().unwrap();
         let input = rl.read_line(&prompt);
         if let Ok(Signal::Success(input)) = input {
             // rl.add_history_entry(input.clone())
