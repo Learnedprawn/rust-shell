@@ -2,14 +2,15 @@ mod parser;
 
 use reedline::{
     ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment, EditCommand, Emacs,
-    FileBackedHistory, HistoryItem, KeyModifiers, MenuBuilder, Prompt, Reedline, ReedlineEvent,
-    SearchDirection, SearchQuery, Signal, default_emacs_keybindings,
+    FileBackedHistory, HistoryItem, KeyModifiers, MenuBuilder, Prompt, PromptEditMode,
+    PromptHistorySearch, Reedline, ReedlineEvent, SearchDirection, SearchQuery, Signal,
+    default_emacs_keybindings,
 };
 // use rustyline::{Config, DefaultEditor, Editor, completion::FilenameCompleter};
 // use rustyline_derive::{Completer, Helper};
 #[allow(unused_imports)]
 use std::io::{self, Write};
-use std::{env, fs::OpenOptions, os::fd::AsRawFd, process::Command, str::FromStr};
+use std::{borrow::Cow, env, fs::OpenOptions, os::fd::AsRawFd, process::Command, str::FromStr};
 
 use is_executable::IsExecutable;
 
@@ -124,11 +125,50 @@ fn main() {
         .with_menu(reedline::ReedlineMenu::EngineCompleter(completion_menu))
         .with_edit_mode(edit_mode);
     // let prompt = DefaultPrompt::default();
-    let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
+    impl Prompt for MyPrompt {
+        fn render_prompt_left(&self) -> Cow<'_, str> {
+            Cow::Borrowed("$ ")
+        }
+
+        fn render_prompt_right(&self) -> Cow<'_, str> {
+            Cow::Borrowed("")
+        }
+
+        fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<'_, str> {
+            Cow::Borrowed("")
+        }
+
+        fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
+            Cow::Borrowed("")
+        }
+
+        fn render_prompt_history_search_indicator(
+            &self,
+            _history_search: PromptHistorySearch,
+        ) -> Cow<'_, str> {
+            Cow::Borrowed("")
+        }
+    }
+    struct MyPrompt {
+        pub left_prompt: String,
+        pub right_prompt: String,
+    }
+
+    // impl Default for MyPrompt {
+    //     fn default() -> Self {
+    //         MyPrompt {
+    //             left_prompt: "",
+    //             right_prompt: "",
+    //         }
+    //     }
+    // }
+    // let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
+    let prompt = MyPrompt {
+        left_prompt: "".to_string(),
+        right_prompt: "".to_string(),
+    };
     // rl.set_helper(Some(h));
     loop {
-        print!("$ ");
-        io::stdout().flush().unwrap();
         let input = rl.read_line(&prompt);
         if let Ok(Signal::Success(input)) = input {
             // rl.add_history_entry(input.clone())
