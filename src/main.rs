@@ -1,6 +1,12 @@
 mod parser;
 
-use rustyline::DefaultEditor;
+use reedline::{
+    ColumnarMenu, DefaultCompleter, DefaultPrompt, DefaultPromptSegment, EditCommand, Emacs,
+    FileBackedHistory, HistoryItem, KeyModifiers, MenuBuilder, Prompt, Reedline, ReedlineEvent,
+    SearchDirection, SearchQuery, Signal, default_emacs_keybindings,
+};
+// use rustyline::{Config, DefaultEditor, Editor, completion::FilenameCompleter};
+// use rustyline_derive::{Completer, Helper};
 #[allow(unused_imports)]
 use std::io::{self, Write};
 use std::{env, fs::OpenOptions, os::fd::AsRawFd, process::Command, str::FromStr};
@@ -74,146 +80,197 @@ pub fn find_file_and_execute(input: Vec<String>) -> Option<String> {
     None
 }
 
+// #[derive(Completer)]
+// struct MyHelper {
+//     #[rustyline(Completer)]
+//     completer: FilenameCompleter,
+// }
+
 fn main() {
-    let mut rl = DefaultEditor::new().expect("rustyline init error");
+    // let config = Config::builder()
+    //     .completion_type(rustyline::CompletionType::List)
+    //     .build();
+    // let h = MyHelper {
+    //     completer: FilenameCompleter::new(),
+    // };
+    // let mut rl: Editor<Helper, _> = Editor::with_config(config).expect("rustyline init error");
+    // let commands = vec![
+    //     "test".into(),
+    //     "hello world".into(),
+    //     "hello world reedline".into(),
+    //     "this is the reedline crate".into(),
+    // ];
+    let commands = vec!["echo".into(), "exit".into()];
+    let history = Box::new(FileBackedHistory::new(100).expect("Error with history"));
+    let completer = Box::new(DefaultCompleter::new_with_wordlen(commands.clone(), 2));
+    let completion_menu = Box::new(ColumnarMenu::default().with_name("completion_menu"));
+    let mut keybindings = default_emacs_keybindings();
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        reedline::KeyCode::Tab,
+        ReedlineEvent::UntilFound(vec![
+            ReedlineEvent::Menu("completion_menu".into()),
+            ReedlineEvent::MenuNext,
+        ]), // reedline::ReedlineEvent::UntilFound(vec![
+            //     ReedlineEvent::Menu("completion_menu".to_string()),
+            //     ReedlineEvent::MenuNext,
+            // ]),
+    );
+    let edit_mode = Box::new(Emacs::new(keybindings));
+    let mut rl = Reedline::create()
+        .with_history(history)
+        .with_completer(completer)
+        .with_quick_completions(true)
+        .with_menu(reedline::ReedlineMenu::EngineCompleter(completion_menu))
+        .with_edit_mode(edit_mode);
+    // let prompt = DefaultPrompt::default();
+    let prompt = DefaultPrompt::new(
+        DefaultPromptSegment::Basic("$ ".to_string()),
+        DefaultPromptSegment::Empty,
+    );
+    // rl.set_helper(Some(h));
     loop {
-        let input = rl.readline("$ ").expect("line reading failed");
-
-        rl.add_history_entry(input.clone())
-            .expect("Error in adding history");
-        let (input_vec, redirection, err_redirection) = parse_line(input)
-            .map_err(|e| {
-                eprintln!("Quoting error: {:?}", e);
-            })
-            .expect("parse_line failed");
-        let saved_stdout;
-        let saved_stderr;
-        unsafe {
-            saved_stdout = libc::dup(1);
-            saved_stderr = libc::dup(2);
-        }
-        match redirection {
-            Some(action) => match action {
-                Redirection::Redirect(path) => {
-                    let file = std::fs::File::create(path).unwrap();
-                    let file_fd = file.as_raw_fd();
-                    unsafe {
-                        libc::dup2(file_fd, 1);
-                    }
-                }
-                Redirection::Append(path) => {
-                    let file = OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open(path)
-                        .expect("Append File Opening error");
-                    let file_fd = file.as_raw_fd();
-                    unsafe {
-                        libc::dup2(file_fd, 1);
-                    }
-                }
-                _ => {}
-            },
-            None => {}
-        };
-        match err_redirection {
-            Some(action) => match action {
-                Redirection::RedirectErr(path) => {
-                    let file = std::fs::File::create(path).unwrap();
-                    let file_fd = file.as_raw_fd();
-                    unsafe {
-                        libc::dup2(file_fd, 2);
-                    }
-                }
-                Redirection::AppendErr(path) => {
-                    let file = OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open(path)
-                        .expect("Append File Opening error");
-                    let file_fd = file.as_raw_fd();
-                    unsafe {
-                        libc::dup2(file_fd, 2);
-                    }
-                }
-                _ => {}
-            },
-            None => {}
-        };
-
-        // if in_single_quotes {
-        //     panic!("Improper quotation use");
-        // }
-
-        let command = input_vec[0].as_str();
-
-        match command {
-            "exit" => break,
-            "echo" => {
-                // writeln!(&mut out, "{}", input_vec[1..].join(" ")).expect("echo write failed");
-                println!("{}", input_vec[1..].join(" "));
+        let input = rl.read_line(&prompt);
+        if let Ok(Signal::Success(input)) = input {
+            // rl.add_history_entry(input.clone())
+            //     .expect("Error in adding history");
+            let (input_vec, redirection, err_redirection) = parse_line(input)
+                .map_err(|e| {
+                    eprintln!("Quoting error: {:?}", e);
+                })
+                .expect("parse_line failed");
+            let saved_stdout;
+            let saved_stderr;
+            unsafe {
+                saved_stdout = libc::dup(1);
+                saved_stderr = libc::dup(2);
             }
-            "type" => {
-                let type_command = input_vec[1].clone();
-                match CommandType::from_str(type_command.clone()) {
-                    CommandType::Builtin => {
-                        println!("{} is a shell builtin", type_command.clone())
+            match redirection {
+                Some(action) => match action {
+                    Redirection::Redirect(path) => {
+                        let file = std::fs::File::create(path).unwrap();
+                        let file_fd = file.as_raw_fd();
+                        unsafe {
+                            libc::dup2(file_fd, 1);
+                        }
                     }
-                    CommandType::File(result) => {
-                        println!("{}", result)
+                    Redirection::Append(path) => {
+                        let file = OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(path)
+                            .expect("Append File Opening error");
+                        let file_fd = file.as_raw_fd();
+                        unsafe {
+                            libc::dup2(file_fd, 1);
+                        }
                     }
-                    _ => {
-                        println!("{} not found", type_command)
+                    _ => {}
+                },
+                None => {}
+            };
+            match err_redirection {
+                Some(action) => match action {
+                    Redirection::RedirectErr(path) => {
+                        let file = std::fs::File::create(path).unwrap();
+                        let file_fd = file.as_raw_fd();
+                        unsafe {
+                            libc::dup2(file_fd, 2);
+                        }
+                    }
+                    Redirection::AppendErr(path) => {
+                        let file = OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(path)
+                            .expect("Append File Opening error");
+                        let file_fd = file.as_raw_fd();
+                        unsafe {
+                            libc::dup2(file_fd, 2);
+                        }
+                    }
+                    _ => {}
+                },
+                None => {}
+            };
+
+            // if in_single_quotes {
+            //     panic!("Improper quotation use");
+            // }
+
+            let command = input_vec[0].as_str();
+
+            match command {
+                "exit" => break,
+                "echo" => {
+                    // writeln!(&mut out, "{}", input_vec[1..].join(" ")).expect("echo write failed");
+                    println!("{}", input_vec[1..].join(" "));
+                }
+                "type" => {
+                    let type_command = input_vec[1].clone();
+                    match CommandType::from_str(type_command.clone()) {
+                        CommandType::Builtin => {
+                            println!("{} is a shell builtin", type_command.clone())
+                        }
+                        CommandType::File(result) => {
+                            println!("{}", result)
+                        }
+                        _ => {
+                            println!("{} not found", type_command)
+                        }
                     }
                 }
-            }
-            "pwd" => {
-                let pwd = env::current_dir().expect("pwd fetch error");
-                println!("{}", pwd.to_str().expect("pwd string parsing failed"));
-            }
-            "cd" => {
-                let mut path = input_vec[1].to_string();
-                if input_vec[1].starts_with("~") {
-                    let home = env::var("HOME").expect("Home ENV variable");
-                    path = format!("{}{}", home, &input_vec[1][1..]);
+                "pwd" => {
+                    let pwd = env::current_dir().expect("pwd fetch error");
+                    println!("{}", pwd.to_str().expect("pwd string parsing failed"));
                 }
-                if let Err(_e) = env::set_current_dir(&path) {
-                    println!("cd: {}: No such file or directory", path)
+                "cd" => {
+                    let mut path = input_vec[1].to_string();
+                    if input_vec[1].starts_with("~") {
+                        let home = env::var("HOME").expect("Home ENV variable");
+                        path = format!("{}{}", home, &input_vec[1][1..]);
+                    }
+                    if let Err(_e) = env::set_current_dir(&path) {
+                        println!("cd: {}: No such file or directory", path)
+                    }
                 }
-            }
-            "history" => {
-                let number = input_vec.get(1);
-                let history_list: Vec<&String> = rl.history().iter().collect();
-                match number {
-                    Some(num) => {
-                        let numeric_num: usize = num.parse().expect("parsing history failed");
-                        for (i, exp) in history_list.iter().enumerate() {
-                            if i + 1 > history_list.len() - numeric_num {
-                                println!("{} {}", i + 1, exp);
+                "history" => {
+                    let number = input_vec.get(1);
+                    let history_list: Vec<HistoryItem> = rl
+                        .history()
+                        .search(SearchQuery::everything(SearchDirection::Forward, None))
+                        .expect("History query failed");
+                    match number {
+                        Some(num) => {
+                            let numeric_num: usize = num.parse().expect("parsing history failed");
+                            for (i, exp) in history_list.iter().enumerate() {
+                                if i + 1 > history_list.len() - numeric_num {
+                                    println!("{} {}", i + 1, exp.command_line);
+                                }
+                            }
+                        }
+                        None => {
+                            for (i, exp) in history_list.iter().enumerate() {
+                                println!("{} {}", i + 1, exp.command_line);
                             }
                         }
                     }
-                    None => {
-                        for (i, exp) in history_list.iter().enumerate() {
-                            println!("{} {}", i + 1, exp);
-                        }
+                }
+                _ => match find_file_and_execute(input_vec.clone()) {
+                    Some(_result) => {
+                        // println!("{}", result)
                     }
-                }
+                    None => {
+                        print!("{}: command not found\n", command.trim());
+                    }
+                },
             }
-            _ => match find_file_and_execute(input_vec.clone()) {
-                Some(_result) => {
-                    // println!("{}", result)
-                }
-                None => {
-                    print!("{}: command not found\n", command.trim());
-                }
-            },
-        }
-        unsafe {
-            libc::dup2(saved_stdout, 1);
-            libc::close(saved_stdout);
-            libc::dup2(saved_stderr, 2);
-            libc::close(saved_stderr);
+            unsafe {
+                libc::dup2(saved_stdout, 1);
+                libc::close(saved_stdout);
+                libc::dup2(saved_stderr, 2);
+                libc::close(saved_stderr);
+            }
         }
     }
 }
