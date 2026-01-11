@@ -125,7 +125,7 @@ fn main() {
         .with_edit_mode(edit_mode);
     // let prompt = DefaultPrompt::default();
     let prompt = DefaultPrompt::new(
-        DefaultPromptSegment::Basic("$ ".to_string()),
+        DefaultPromptSegment::Basic("$ ".into()),
         DefaultPromptSegment::Empty,
     );
     // rl.set_helper(Some(h));
