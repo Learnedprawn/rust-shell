@@ -162,11 +162,11 @@ fn main() {
     //         }
     //     }
     // }
-    let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
-    // let prompt = MyPrompt {
-    //     left_prompt: "".to_string(),
-    //     right_prompt: "".to_string(),
-    // };
+    // let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
+    let prompt = MyPrompt {
+        left_prompt: "".to_string(),
+        right_prompt: "".to_string(),
+    };
     // rl.set_helper(Some(h));
     loop {
         rl.run_edit_commands(&[EditCommand::InsertString("$ ".to_string())]);
