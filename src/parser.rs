@@ -1,5 +1,5 @@
 //You give a line to the parser and it returns parsed input_vec outside
-use std::{mem::take, path::PathBuf};
+use std::{iter::Peekable, mem::take, path::PathBuf};
 
 pub enum Redirection {
     Redirect(PathBuf),
@@ -8,9 +8,14 @@ pub enum Redirection {
     AppendErr(PathBuf),
 }
 
-pub fn parse_line(
-    line: String,
-) -> Result<(Vec<String>, Option<Redirection>, Option<Redirection>), ()> {
+fn parse_single_command<I>(
+    line_iter: &mut Peekable<I>,
+    redirection: &mut Option<Redirection>,
+    err_redirection: &mut Option<Redirection>,
+) -> Vec<String>
+where
+    I: Iterator<Item = char>,
+{
     let mut current_buffer: String = String::new();
     let mut input_vec: Vec<String> = vec![];
     let mut in_single_quotes = false;
@@ -20,11 +25,7 @@ pub fn parse_line(
     let mut appended = false;
     let mut err_appended = false;
     let mut err_redirected = false;
-    let mut redirection: Option<Redirection> = None;
-    let mut err_redirection: Option<Redirection> = None;
     let special = vec!['"', '\\'];
-    let mut line_iter = line.chars().peekable();
-    // for character in line_iter.by_ref() {
     loop {
         match line_iter.next() {
             Some(character) => {
@@ -115,7 +116,7 @@ pub fn parse_line(
                 }
                 if err_redirected {
                     if character == ' ' && !current_buffer.is_empty() {
-                        err_redirection = Some(Redirection::RedirectErr(PathBuf::from(take(
+                        *err_redirection = Some(Redirection::RedirectErr(PathBuf::from(take(
                             &mut current_buffer,
                         ))));
                         err_redirected = false;
@@ -123,7 +124,7 @@ pub fn parse_line(
                 }
                 if redirected {
                     if character == ' ' && !current_buffer.is_empty() {
-                        redirection = Some(Redirection::Redirect(PathBuf::from(take(
+                        *redirection = Some(Redirection::Redirect(PathBuf::from(take(
                             &mut current_buffer,
                         ))));
                         redirected = false;
@@ -131,7 +132,7 @@ pub fn parse_line(
                 }
                 if appended {
                     if character == ' ' && !current_buffer.is_empty() {
-                        redirection = Some(Redirection::Append(PathBuf::from(take(
+                        *redirection = Some(Redirection::Append(PathBuf::from(take(
                             &mut current_buffer,
                         ))));
                         appended = false;
@@ -153,16 +154,47 @@ pub fn parse_line(
         // }
     }
     if redirected {
-        redirection = Some(Redirection::Redirect(PathBuf::from(current_buffer)));
+        *redirection = Some(Redirection::Redirect(PathBuf::from(current_buffer)));
     } else if err_redirected {
-        err_redirection = Some(Redirection::RedirectErr(PathBuf::from(current_buffer)));
+        *err_redirection = Some(Redirection::RedirectErr(PathBuf::from(current_buffer)));
     } else if appended {
-        redirection = Some(Redirection::Append(PathBuf::from(current_buffer)));
+        *redirection = Some(Redirection::Append(PathBuf::from(current_buffer)));
     } else if err_appended {
-        err_redirection = Some(Redirection::AppendErr(PathBuf::from(current_buffer)));
+        *err_redirection = Some(Redirection::AppendErr(PathBuf::from(current_buffer)));
     } else {
         input_vec.push(current_buffer);
     }
+    input_vec
+}
 
-    Ok((input_vec, redirection, err_redirection))
+pub fn parse_line(
+    line: String,
+) -> Result<(Vec<Vec<String>>, Option<Redirection>, Option<Redirection>), ()> {
+    let mut redirection: Option<Redirection> = None;
+    let mut err_redirection: Option<Redirection> = None;
+    let mut line_iter = line.chars().peekable();
+    // let mut commands: Vec<Vec<String>> = vec![];
+    let mut piped = line.contains("|");
+    let mut commands = vec![];
+    if piped {
+        println!(
+            "{:?}",
+            line.split("|")
+                .map(|command| command.trim())
+                .collect::<Vec<&str>>()
+        );
+        for command in line.split("|").map(|command| command.trim()) {
+            commands.push(parse_single_command(
+                &mut command.chars().peekable(),
+                &mut redirection,
+                &mut err_redirection,
+            ));
+        }
+        println!("piped: {:?}", commands);
+    } else {
+        let command = parse_single_command(&mut line_iter, &mut redirection, &mut err_redirection);
+        commands.push(command);
+    }
+
+    Ok((commands, redirection, err_redirection))
 }

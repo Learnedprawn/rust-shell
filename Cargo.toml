@@ -13,4 +13,3 @@ is_executable = "1.0.5"                             # OS independent file execut
 rustyline = "17.0.1"
 libc = "0.2.178"
 rustyline-derive = "0.11.1"
-reedline = "0.44.0"
